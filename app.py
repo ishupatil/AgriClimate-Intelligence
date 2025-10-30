@@ -14,8 +14,7 @@ st.set_page_config(
 # Initialize session state
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-# --- App Header ---
-st.title("🌾 AgriClimate Intelligence System")
+
 
 
 # Load datasets

@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import json
+import datetime
+
 
 # Page configuration
 st.set_page_config(
@@ -12,6 +14,9 @@ st.set_page_config(
 # Initialize session state
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+# --- App Header ---
+st.title("🌾 AgriClimate Intelligence System")
+
 
 # Load datasets
 @st.cache_data
@@ -48,15 +53,50 @@ def load_metadata():
         }
 
 def analyze_question(question, rainfall_df, crop_df):
-    """Analyze question and return relevant data with insights"""
-    question_lower = question.lower()
-    
-    # Initialize response
-    response = {
-        'text': '',
-        'data': None,
-        'data_type': None
-    }
+    question_lower = question.lower().strip()
+    response = {"text": "", "data": None, "data_type": None}
+
+    # --- 1️⃣ Handle Greetings / Small Talk (keep as you already have) ---
+    greetings = ["hi", "hello", "hey", "good morning", "good evening"]
+    if any(g in question_lower for g in greetings):
+        response["text"] = "👋 Hello there! How can I help you explore Tamil Nadu’s rainfall or crop data today?"
+        return response
+
+    if "how are you" in question_lower:
+        response["text"] = "😊 I’m just a chatbot, but I’m doing great! Ready to analyze data for you."
+        return response
+
+    if "who made you" in question_lower or "developer" in question_lower:
+        response["text"] = "🤖 I was created by **Ishwaree Patil** as part of the *Bharat Digital Fellowship 2026* project!"
+        return response
+    if "what is your name" in question_lower or "who are you" in question_lower or "your name" in question_lower:
+        response["text"] = "🤖 My name is **AgriClimateBot** — your data assistant for Tamil Nadu’s agriculture and climate insights! 🌾☁️"
+        return response
+
+    if "bye" in question_lower or "thank" in question_lower:
+        response["text"] = "👋 You’re welcome! Have a wonderful day ahead 🌾"
+        return response
+
+    # --- 2️⃣ Fallback for unrelated or unusual questions ---
+    # Keywords related to data domain
+    data_keywords = [
+        "rain", "rainfall", "district", "crop", "production", "area",
+        "productivity", "yield", "monsoon", "agriculture", "climate"
+    ]
+
+    # If none of the relevant keywords appear → respond with chatbot purpose
+    if not any(k in question_lower for k in data_keywords):
+        response["text"] = (
+            "🤖 I’m **AgriClimateBot**, a data assistant built to analyze and explain "
+            "**Tamil Nadu’s rainfall and crop production datasets**. 🌾☁️\n\n"
+            "I’m not designed for general conversation — but I can help you with agriculture and climate insights!\n\n"
+            "💡 Try asking questions like:\n"
+            "- Which district received the most rainfall in 2019?\n"
+            "- Which crop had the highest productivity?\n"
+            "- Compare rainfall between Chennai and Coimbatore.\n"
+            "- What is the average rainfall across Tamil Nadu?\n"
+        )
+        return response
     
     # RAINFALL QUERIES
     if any(word in question_lower for word in ['rainfall', 'rain', 'monsoon', 'precipitation', 'weather', 'climate']):
@@ -405,72 +445,92 @@ with col3:
     st.metric("📊 Data Points", len(rainfall_df) + len(crop_df))
 
 st.success("✅ All datasets loaded successfully from data.gov.in")
-
-# Display chat history
-for message in st.session_state.chat_history:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        
-        if "data" in message and message["data"] is not None:
-            with st.expander("📊 View Raw Data from data.gov.in"):
-                if isinstance(message["data"], dict):
-                    st.subheader("🌧️ Rainfall Data")
-                    st.dataframe(message["data"]['rainfall'], use_container_width=True)
-                    st.caption("Source: India Meteorological Department via data.gov.in")
-                    
-                    st.subheader("🌾 Crop Data")
-                    st.dataframe(message["data"]['crops'], use_container_width=True)
-                    st.caption("Source: Ministry of Agriculture & Farmers Welfare via data.gov.in")
-                else:
-                    st.dataframe(message["data"], use_container_width=True)
-
 # Chat input
+# --- Chat input ---
 user_question = st.chat_input("💬 Ask about Tamil Nadu's agriculture and climate data...")
 
 if user_question:
-    # Add user message
+    # --- Timestamp for user message ---
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # --- Save user's message ---
     st.session_state.chat_history.append({
         "role": "user",
-        "content": user_question
+        "content": user_question,
+        "time": current_time
     })
-    
+
+    # --- Display user message (no timestamp here) ---
     with st.chat_message("user"):
-        st.markdown(user_question)
-    
-    # Process question
+        st.markdown(f"**🧑‍💻 You:** {user_question}")
+
+    # --- Process and display bot's response ---
     with st.chat_message("assistant"):
         with st.spinner("🔍 Analyzing data from data.gov.in..."):
-            
-            # Analyze and get response
             result = analyze_question(user_question, rainfall_df, crop_df)
-            
-            # Display answer
-            st.markdown(result['text'])
-            
-            # Show data tables
-            if result['data'] is not None:
-                with st.expander("📊 View Retrieved Data from data.gov.in", expanded=False):
-                    if isinstance(result['data'], dict):
-                        st.subheader("🌧️ Rainfall Data")
-                        st.dataframe(result['data']['rainfall'], use_container_width=True)
-                        st.caption("📍 Source: India Meteorological Department via data.gov.in")
-                        
-                        st.subheader("🌾 Crop Production Data")
-                        st.dataframe(result['data']['crops'], use_container_width=True)
-                        st.caption("📍 Source: Ministry of Agriculture & Farmers Welfare via data.gov.in")
-                    else:
-                        st.dataframe(result['data'], use_container_width=True)
-                        if result['data_type'] == 'rainfall':
-                            st.caption("📍 Source: India Meteorological Department via data.gov.in")
-                        elif result['data_type'] == 'crops':
-                            st.caption("📍 Source: Ministry of Agriculture & Farmers Welfare via data.gov.in")
-            
-            # Add to chat history
+            bot_text = result["text"]
+
+            # --- Timestamp for bot reply ---
+            response_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # --- Save bot message ---
             st.session_state.chat_history.append({
                 "role": "assistant",
-                "content": result['text'],
-                "data": result['data']
+                "content": bot_text,
+                "data": result.get("data"),
+                "time": response_time
             })
 
-# Footer
+            # --- Display bot reply ---
+            st.markdown(f"**🤖 AgriClimateBot:**\n\n{bot_text}")
 
+            # --- Show retrieved data ---
+            if result.get("data") is not None:
+                with st.expander("📊 View Retrieved Data from data.gov.in", expanded=False):
+                    if isinstance(result["data"], dict):
+                        st.subheader("🌧️ Rainfall Data")
+                        st.dataframe(result["data"]["rainfall"], use_container_width=True)
+                        st.caption("📍 Source: India Meteorological Department via data.gov.in")
+
+                        st.subheader("🌾 Crop Production Data")
+                        st.dataframe(result["data"]["crops"], use_container_width=True)
+                        st.caption("📍 Source: Ministry of Agriculture & Farmers Welfare via data.gov.in")
+                    else:
+                        st.dataframe(result["data"], use_container_width=True)
+                        if result.get("data_type") == "rainfall":
+                            st.caption("📍 Source: India Meteorological Department via data.gov.in")
+                        elif result.get("data_type") == "crops":
+                            st.caption("📍 Source: Ministry of Agriculture & Farmers Welfare via data.gov.in")
+
+# --- Conversation History (Collapsible Section) ---
+with st.expander("💬 Conversation History", expanded=False):
+    if len(st.session_state.chat_history) == 0:
+        st.info("No chat history yet.")
+    else:
+        for msg in st.session_state.chat_history:
+            role_label = "🧑‍💻 You" if msg["role"] == "user" else "🤖 AgriClimateBot"
+            st.markdown(
+                f"<div style='padding:8px; margin-bottom:5px; border-radius:10px; background-color:#1e2128;'>"
+                f"<b>{role_label}</b> <span style='color:gray;'>({msg['time']})</span><br>{msg['content']}</div>",
+                unsafe_allow_html=True
+            )
+
+st.markdown("""
+<style>
+footer {visibility: hidden;}
+.footer-fixed {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-top: 1px solid #333;
+    margin-top: 2rem;
+}
+.main {
+    padding-bottom: 80px; /* prevent footer overlap */
+}
+</style>
+""", unsafe_allow_html=True)

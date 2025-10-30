@@ -1,0 +1,14 @@
+{
+  "rainfall_data": {
+    "title": "District-wise Rainfall Data - Tamil Nadu (2019)",
+    "source": "India Meteorological Department",
+    "years_covered": "2019",
+    "description": "Seasonal and annual rainfall for Tamil Nadu districts"
+  },
+  "crop_production": {
+    "title": "Crop Production Statistics - Tamil Nadu (2012-13)",
+    "source": "Ministry of Agriculture & Farmers Welfare",
+    "years_covered": "2012-2013",
+    "description": "Area, production, and productivity for major crops"
+  }
+}

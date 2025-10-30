@@ -1,0 +1,8 @@
+
+streamlit==1.51.0
+pandas==2.1.1
+scikit-learn==1.5.2
+nltk==3.9.1
+protobuf>=3.20,<7
+matplotlib==3.9.2
+numpy==1.26.4

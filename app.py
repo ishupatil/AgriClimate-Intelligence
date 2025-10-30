@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import json
 import datetime
-import re
 
 
 # Page configuration
@@ -58,9 +57,9 @@ def analyze_question(question, rainfall_df, crop_df):
 
     # --- 1️⃣ Handle Greetings / Small Talk (keep as you already have) ---
     greetings = ["hi", "hello", "hey", "good morning", "good evening"]
-    if any(re.fullmatch(rf"\b{g}\b", question_lower) for g in greetings):
-       response["text"] = "👋 Hello there! How can I help you explore Tamil Nadu’s rainfall or crop data today?"
-       return response
+    if any(g in question_lower for g in greetings):
+        response["text"] = "👋 Hello there! How can I help you explore Tamil Nadu’s rainfall or crop data today?"
+        return response
 
     if "how are you" in question_lower:
         response["text"] = "😊 I’m just a chatbot, but I’m doing great! Ready to analyze data for you."
@@ -97,57 +96,7 @@ def analyze_question(question, rainfall_df, crop_df):
             "- What is the average rainfall across Tamil Nadu?\n"
         )
         return response
-    # --- 3️⃣ Handle "Which district has highest rainfall" ---
-    try:
-        pattern = r"(which district|where).*?(highest|max(?:imum)?|most).*?(rain|rainfall|precipitation)"
-        if re.search(pattern, question_lower):
-            if rainfall_df is None or rainfall_df.empty:
-                response["text"] = "⚠️ Sorry, I couldn’t find any rainfall data to analyze right now."
-                return response
-
-            # Identify possible columns
-            district_col = next((c for c in rainfall_df.columns if re.search(r"district|region|zone|place", c, re.I)), None)
-            rainfall_col = next((c for c in rainfall_df.columns if re.search(r"rain|precip", c, re.I)), None)
-
-            if not district_col or not rainfall_col:
-                response["text"] = "⚠️ Couldn't identify district or rainfall columns in your dataset. Please check column names."
-                return response
-
-            # Convert to numeric and clean
-            df = rainfall_df[[district_col, rainfall_col]].copy()
-            df[rainfall_col] = pd.to_numeric(df[rainfall_col], errors="coerce")
-            df = df.dropna(subset=[rainfall_col])
-
-            if df.empty:
-                response["text"] = "⚠️ The rainfall data appears empty or invalid after cleaning."
-                return response
-
-            # Group and find highest rainfall
-            grouped = df.groupby(district_col)[rainfall_col].mean()
-            if grouped.empty:
-                response["text"] = "⚠️ Unable to compute rainfall statistics due to missing data."
-                return response
-
-            top_district = grouped.idxmax()
-            max_rainfall = grouped.max()
-
-            response["text"] = (
-                f"🌧️ The district with the **highest average rainfall** is **{top_district}**, "
-                f"with approximately **{round(max_rainfall, 2)} mm** of rainfall."
-            )
-            response["data"] = df
-            response["data_type"] = "rainfall"
-            return response
-
-    except Exception as e:
-        response["text"] = f"❌ An unexpected error occurred while analyzing rainfall data: {str(e)}"
-        return response
-
-    # --- 4️⃣ Default fallback if no pattern matched ---
-    response["text"] = "🤔 I couldn’t understand that question clearly. Could you please rephrase it?"
-    return response
-      
-
+    
     # RAINFALL QUERIES
     if any(word in question_lower for word in ['rainfall', 'rain', 'monsoon', 'precipitation', 'weather', 'climate']):
         response['data_type'] = 'rainfall'
@@ -567,7 +516,7 @@ with st.expander("💬 Conversation History", expanded=False):
 
 st.markdown("""
 <style>
-footer {visibility: visible;}
+footer {visibility: hidden;}
 .footer-fixed {
     position: relative;
     bottom: 0;
